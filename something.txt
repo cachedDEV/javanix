@@ -1,0 +1,66 @@
+; Osu! Relax Mod v3 - GUI + Max Stealth (Pure AHK - No extras)
+; Tune min/max MS live. Default 23-64ms. Heavy randomization for #1 climb safety.
+
+#NoEnv
+#SingleInstance Force
+#Persistent
+#MaxHotkeysPerInterval 99000000
+#HotkeyInterval 99000000
+#KeyHistory 0
+SetBatchLines -1
+SetKeyDelay -1, -1
+SetMouseDelay -1
+SetControlDelay -1
+SetWinDelay -1
+SendMode Input
+ListLines Off
+
+; Default values
+minMS := 23
+maxMS := 64
+jitter := 4
+curve := 3
+enabled := false
+
+; === GUI ===
+Gui, New, +AlwaysOnTop, Osu Relax Stealth GUI
+Gui, Add, Text, x10 y10, Min Reaction (ms):
+Gui, Add, Edit, vMinEdit x150 y10 w60, %minMS%
+Gui, Add, Text, x10 y40, Max Reaction (ms):
+Gui, Add, Edit, vMaxEdit x150 y40 w60, %maxMS%
+Gui, Add, Text, x10 y70, Mouse Jitter:
+Gui, Add, Slider, vJitterSlider x150 y70 w150 Range1-10, %jitter%
+Gui, Add, Text, x10 y100, Curve Steps:
+Gui, Add, Slider, vCurveSlider x150 y100 w150 Range1-8, %curve%
+Gui, Add, Button, gUpdateValues x10 y130 w100, Apply Settings
+Gui, Add, Button, gToggle x120 y130 w100, Toggle ON/OFF
+Gui, Show, w320 h170, Osu Relax - Undetectable Mode
+return
+
+UpdateValues:
+    Gui, Submit, NoHide
+    minMS := MinEdit
+    maxMS := MaxEdit
+    jitter := JitterSlider
+    curve := CurveSlider
+    ToolTip, Settings Updated: %minMS%-%maxMS%ms
+    SetTimer, RemoveToolTip, -1000
+return
+
+Toggle:
+    enabled := !enabled
+    if (enabled) {
+        GuiControl,, Toggle, Toggle OFF
+        ToolTip, Stealth Relax ACTIVE - Tuning: %minMS%-%maxMS%ms
+    } else {
+        GuiControl,, Toggle, Toggle ON
+        ToolTip, Relax OFF
+    }
+    SetTimer, RemoveToolTip, -1200
+return
+
+RemoveToolTip:
+    ToolTip
+return
+
+; Stealth Click Function
