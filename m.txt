@@ -1,0 +1,87 @@
+#include <windows.h>
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <tlhelp32.h>
+
+struct Vector3 { float x, y, z; };
+struct Player { uintptr_t base; Vector3 headPos; bool isEnemy; };
+
+DWORD GetProcessId(const wchar_t* procName) {
+    PROCESSENTRY32W pe32;
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot == INVALID_HANDLE_VALUE) return 0;
+    pe32.dwSize = sizeof(PROCESSENTRY32W);
+    if (Process32FirstW(hSnapshot, &pe32)) {
+        do {
+            if (wcscmp(pe32.szExeFile, procName) == 0) {
+                CloseHandle(hSnapshot);
+                return pe32.th32ProcessID;
+            }
+        } while (Process32NextW(hSnapshot, &pe32));
+    }
+    CloseHandle(hSnapshot);
+    return 0;
+}
+
+uintptr_t GetModuleBase(DWORD pid, const char* modName) {
+    return 0x140000000; // Placeholder - update later
+}
+
+std::vector<Player> GetPlayers(HANDLE hProc, uintptr_t base) {
+    std::vector<Player> players;
+    // TODO: Fill with real memory reading for Rivals players
+    return players;
+}
+
+Vector3 WorldToScreen(HANDLE hProc, Vector3 world) {
+    return {0, 0, 0}; // Placeholder
+}
+
+void AimAt(HANDLE hProc, Vector3 target) {
+    POINT cursor;
+    GetCursorPos(&cursor);
+    float smooth = 0.5f;
+    int screenX = (int)(target.x * smooth + cursor.x * (1 - smooth));
+    int screenY = (int)(target.y * smooth + cursor.y * (1 - smooth));
+    SetCursorPos(screenX, screenY);
+}
+
+int main() {
+    DWORD pid = GetProcessId(L"RobloxPlayerBeta.exe");
+    if (!pid) {
+        std::cout << "Launch Roblox Rivals first.\n";
+        system("pause");
+        return 1;
+    }
+
+    HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+    uintptr_t base = GetModuleBase(pid, "RobloxPlayerBeta.exe");
+
+    std::cout << "Rivals Aimbot Active - Hold Right Mouse Button\n";
+
+    while (true) {
+        if (GetAsyncKeyState(VK_RBUTTON) & 0x8000) {
+            auto players = GetPlayers(hProc, base);
+            Player* closest = nullptr;
+            float minDist = 999999.0f;
+
+            for (auto& p : players) {
+                if (p.isEnemy) {
+                    Vector3 screen = WorldToScreen(hProc, p.headPos);
+                    float dist = std::sqrt(std::pow(screen.x - 1920/2, 2) + std::pow(screen.y - 1080/2, 2));
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closest = &p;
+                    }
+                }
+            }
+
+            if (closest) AimAt(hProc, WorldToScreen(hProc, closest->headPos));
+        }
+        Sleep(1);
+    }
+
+    CloseHandle(hProc);
+    return 0;
+}
